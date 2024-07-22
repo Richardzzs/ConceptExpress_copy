@@ -1058,7 +1058,9 @@ class ConceptExpress:
         # We need to initialize the trackers we use, and also store our configuration.
         # The trackers initializes automatically on the main process.
         if self.accelerator.is_main_process:
+#            print(self.args)
             self.accelerator.init_trackers("dreambooth", config=vars(self.args))
+#            self.accelerator.init_trackers("dreambooth", config=vars(dict(vars(self.args)).pop("initializer_tokens")))
 
         # Train
         total_batch_size = (
@@ -1198,6 +1200,9 @@ class ConceptExpress:
                         ).input_ids
 
                         # Get the text embedding for conditioning
+                        # print(null_input_ids)
+                        # print(null_input_ids.shape)
+                        null_input_ids = null_input_ids.to(latents.device)
                         encoder_hidden_states = self.text_encoder(null_input_ids)[0]
 
                         # Predict the noise residual
@@ -1325,6 +1330,7 @@ class ConceptExpress:
                         )
 
                         # Get the text embedding for conditioning
+                        prompt_ids = prompt_ids.to(latents.device)  # TODO
                         encoder_hidden_states = self.text_encoder(prompt_ids)[0]
                         # Predict the noise residual
                         model_pred = self.unet(
@@ -1517,7 +1523,7 @@ class ConceptExpress:
                             last_sentence = self.tokenizer.decode(last_sentence)
                             self.save_cross_attention_vis(
                                 last_sentence,
-                                attention_maps=agg_attn.detach().cpu(),
+                               attention_maps=agg_attn.detach().cpu(),
                                 path=os.path.join(
                                     img_logs_path, f"{global_step:05}_step_attn.jpg"
                                 ),
@@ -1535,7 +1541,7 @@ class ConceptExpress:
                         )
                         self.save_cross_attention_vis(
                             self.args.instance_prompt,
-                            attention_maps=full_agg_attn.detach().cpu(),
+                           attention_maps=full_agg_attn.detach().cpu(),
                             path=os.path.join(
                                 img_logs_path, f"{global_step:05}_full_attn.jpg"
                             ),
@@ -1882,7 +1888,8 @@ class P2PCrossAttnProcessor:
         attention_mask=None,
     ):
         batch_size, sequence_length, _ = hidden_states.shape
-        attention_mask = attn.prepare_attention_mask(attention_mask, sequence_length)
+        # attention_mask = attn.prepare_attention_mask(attention_mask, sequence_length)
+        attention_mask = attn.prepare_attention_mask(attention_mask, sequence_length, batch_size)
 
         query = attn.to_q(hidden_states)
 
